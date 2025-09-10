@@ -1,0 +1,19 @@
+{
+  "name": "chai-backend",
+  "version": "1.0.0",
+  "description": "this is my first step to learn js backend",
+  "keywords": [
+    "javascript",
+    "node"
+  ],
+  "license": "ISC",
+  "author": "Sagar Singh",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
