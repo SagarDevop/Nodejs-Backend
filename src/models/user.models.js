@@ -11,7 +11,7 @@ const userSchema = new Schema(
             trim: true,
             lowercase:true
         },
-          fullName: {
+          fullname: {
             type: String,
             required: true,
             trim: true,
@@ -24,12 +24,12 @@ const userSchema = new Schema(
             },
             avatar: {
                 type: String,
-                required: true,
+                
                 default: null
             },
             coverImage: {
                 type: String,
-                required: true,
+                
             },
             watchHistory: [
                 {
