@@ -3,9 +3,9 @@ import { ApiError } from "../utils/ApiErrors.js";
 import { User } from "../models/user.models.js";
 import { uploadCloudinary } from "../utils/cloudnary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
+import jwt from 'jsonwebtoken'
 const generateAccessAndRefreshToken = async(userId) =>{
-    const user = User.findById(userId)
+    const user =await User.findById(userId)
    const accessToken = user.generateAccessToken()
    const refreshToken = user.generateRefreshToken()
 
@@ -74,15 +74,17 @@ const createdUser =  await User.findById(user._id).select(
 })
 
 export const loginUser = asyncHandler(async(req, res) =>{
-    const{email, password, username} = req.body;
+    console.log(req.body)
+    const{ email, password, username} = req.body;
+    
 
-    if(!email || !username){
+    if(!(email || username)){ // here we are checking for both 
         throw new ApiError(401, "email  or username is not entered")
     }
 
     const existingUser = await User.findOne({ $or: [ { username: username }, { email: email } ] })
 
-    if(existingUser){
+    if(!existingUser){
         throw new ApiError(409, "user already exist")
         
     }
@@ -94,10 +96,10 @@ export const loginUser = asyncHandler(async(req, res) =>{
     
    }
 
- const {refreshToken, accessToken} =  await generateAccessAndRefreshToken(user._id)
+ const {refreshToken, accessToken} =  await generateAccessAndRefreshToken(existingUser._id)
 
- const loggedInUser = await User.findById(user._id).select(
-    "-password, -refreshToken"
+ const loggedInUser = await User.findById(existingUser._id).select(
+    "-password -refreshToken"
  )
 
  const options = {
@@ -123,7 +125,7 @@ export const loginUser = asyncHandler(async(req, res) =>{
 })
 
 export const logoutUser = asyncHandler(async(req, res) =>{
-    User.findByIdAndUpdate(
+   await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
@@ -140,13 +142,53 @@ export const logoutUser = asyncHandler(async(req, res) =>{
  }
 
   return res
- .status
- .clearCookie(refreshToken, options)
- .clearCookie(accessToken, options)
+ .status(200)
+ .clearCookie("refreshToken", options)
+ .clearCookie("accessToken", options)
  .json(
     new ApiResponse(201,{}, "New user logout successfully ")
  )
  
+
+})
+
+export const refreshAccessToken = asyncHandler(async(req, res) =>{
+  const incomingRefreshTokrn =  req.cookies.refreshToken || req.body.refreshToken
+
+  if(!incomingRefreshTokrn){
+    throw new ApiError(400, "there is no refersh token present")
+  }
+ const verfiedToken = jwt.verify(incomingRefreshTokrn, process.env.REFRESH_TOKEN_SECRET)
+
+ if(!verfiedToken){
+    throw new ApiError(401, "invalid refresh token")
+ }
+  const user = await User.findById(verfiedToken._id)
+  if(!user){
+    throw new ApiError(401, "refersh token is expire")
+ }
+ if(incomingRefreshTokrn !== user.refreshToken){
+    throw new ApiError(402, "token are not matchhed ")
+ }
+
+  const options = {
+   httpOnly: true,
+   secure: true 
+ }
+ const {accessToken, newrefreshToken} = await generateAccessAndRefreshToken(user._id)
+
+ return res
+ .status(200)
+ .cookie("accessToken", accessToken)
+ .cookie("refreshToken", refreshToken)
+ .json(
+    new ApiError(
+        200,
+        {newrefreshToken, accessToken},
+        "access tokken refreshed"
+    )
+ )
+
 
 })
 
