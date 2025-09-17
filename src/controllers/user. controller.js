@@ -215,3 +215,94 @@ return res
  .json(new ApiResponse(200, {}, "password changed"))
 })
 
+export const getCurrentUser = asyncHandler(async(req, res) =>{
+  return res
+  .status(200)
+  .json(
+    200, req.user, "user fetched successfully"
+  )
+})
+
+export const updateUserDetail = asyncHandler(async(req, res) =>{
+  const {fullname, email} = req.body;
+
+  if(!fullname || !email){
+    throw new ApiError(401, "required credentials are missing")
+  }
+
+ const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: {
+      fullname,
+      email
+    },
+    
+  },
+  {new: true}
+).select("-password")
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, "detailed are updated successfully")
+  )
+})
+
+export const updateUserAvatar = asyncHandler(async(req, res) =>{
+  const avatarLocalFilePath = req.file.path;
+
+  if(!avatarLocalFilePath){
+    throw new ApiError(400,  "unable  to get local file path ..")
+  }
+
+  const avatar = await uploadCloudinary(avatarLocalFilePath)
+
+  if(!avatar.url){
+    throw new ApiError(400,  "unable  to get local file in cloudinary ..")
+  }
+ const user = await User.findByIdAndUpdate(req.user._id,
+    {
+      $set: {
+        avatar: avatar.url
+      }
+    },
+    {new:true}
+  ).select("-password")
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, "cover image updated ")
+  )
+
+
+})
+
+export const updateUserCoverImage = asyncHandler(async(req, res) =>{
+  const coverImageLocalFilePath = req.file.path;
+
+  if(!coverImageLocalFilePath){
+    throw new ApiError(400, "unable to get local path of cover image")
+  }
+
+  const coverImage = uploadCloudinary(coverImageLocalFilePath)
+
+  if(!coverImage.url){
+    throw new ApiError(400, "unable to get cloudinary path of cover image")
+  }
+
+  const user = await User.findByIdAndUpdate(req.user._id,
+    {
+      $set: {
+        coverImage: coverImage.url
+      }
+    },{new: true}
+  ).select("-password")
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, "coverimage of user is updated successfully")
+  )
+
+})
+
